@@ -66,8 +66,6 @@ src/
 
 ## Frontend conventions
 
-These follow the FileSalad / Dockito frontend guide. They are not optional —
-deviations need a comment explaining why.
 
 - **Feature-Sliced Design.** Code lives under `features/<name>/` organised by
   layer: `screen/` (composition root, reads like a table of contents),
