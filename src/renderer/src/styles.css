@@ -1,0 +1,91 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Design tokens, palette, and typography come from file-salad-ui-lib's
+   stylesheet (imported in main.tsx) — the --fs-* custom properties are the
+   single source of truth. This file sets panel-shell basics + the drop target,
+   referencing those tokens. To re-theme, override --fs-* vars here. */
+html,
+body,
+#root {
+  height: 100%;
+}
+
+body {
+  margin: 0;
+  background: var(--fs-bg);
+  color: var(--fs-text);
+  font-family: var(--fs-font-sans);
+  /* Menu-bar panels shouldn't show a text-selection cursor on chrome. */
+  user-select: none;
+}
+
+/* ---------------------------------------------------------------------------
+   Centered drop target: a white circle with a pulsating accent halo, matching
+   the web tone but scaled for the compact panel. Same approach as web — reshape
+   the lib DropZone into a circle and emit rings from a wrapper behind it.
+--------------------------------------------------------------------------- */
+.fs-target {
+  position: relative;
+  display: grid;
+  place-items: center;
+}
+
+.fs-target::before,
+.fs-target::after {
+  content: '';
+  position: absolute;
+  width: 9rem;
+  height: 9rem;
+  border-radius: 9999px;
+  background: var(--fs-accent-subtle);
+  z-index: 0;
+  animation: fs-pulse-ring 2.8s cubic-bezier(0.2, 0.6, 0.2, 1) infinite;
+}
+
+.fs-target::after {
+  animation-delay: 1.4s;
+}
+
+@keyframes fs-pulse-ring {
+  0% {
+    transform: scale(1);
+    opacity: 0.7;
+  }
+  70% {
+    opacity: 0;
+  }
+  100% {
+    transform: scale(1.55);
+    opacity: 0;
+  }
+}
+
+.fs-target .fs-dropzone-circle {
+  position: relative;
+  z-index: 1;
+  width: 9rem;
+  height: 9rem;
+  min-height: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 9999px !important;
+  border-style: solid !important;
+  border-color: var(--fs-border) !important;
+  background: var(--fs-bg) !important;
+  box-shadow: 0 10px 30px -12px rgba(26, 36, 32, 0.35);
+}
+
+.fs-target.is-busy::before,
+.fs-target.is-busy::after {
+  animation: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .fs-target::before,
+  .fs-target::after {
+    animation: none;
+  }
+}

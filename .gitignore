@@ -1,0 +1,15 @@
+node_modules/
+dist/
+out/
+release/
+coverage/
+*.tsbuildinfo
+
+# env — never commit real secrets; .env.example is the template
+.env
+.env.local
+.env.*.local
+
+# logs / os
+*.log
+.DS_Store
