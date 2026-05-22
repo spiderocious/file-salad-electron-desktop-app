@@ -3,7 +3,7 @@
 export {
   Salad,
   UploadCloud,
-  Link as LinkIcon,
+  ExternalLink as LinkIcon,
   Copy,
   Check,
   Clock,

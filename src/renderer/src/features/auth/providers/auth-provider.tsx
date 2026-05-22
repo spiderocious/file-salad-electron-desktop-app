@@ -1,6 +1,6 @@
-import { createContext, useContext, useEffect, useState, type ReactNode } from 'react';
+import { createContext, useContext, type ReactNode } from 'react';
 
-import { hasStoredToken, useMe } from '../api/use-me.ts';
+import { useMe, useTokenPresence } from '../api/use-me.ts';
 import type { AuthUser } from '@shared/types/api.ts';
 
 interface AuthContextValue {
@@ -13,32 +13,19 @@ interface AuthContextValue {
 const AuthContext = createContext<AuthContextValue | null>(null);
 
 export function AuthProvider({ children }: { children: ReactNode }) {
-  const [tokenChecked, setTokenChecked] = useState(false);
-  const [hasToken, setHasToken] = useState(false);
+  // Token presence is a query, so logging in/out (which invalidate it) flips
+  // auth state reactively — no stale one-shot mount check.
+  const tokenPresence = useTokenPresence();
+  const hasToken = tokenPresence.data ?? false;
 
-  useEffect(() => {
-    let active = true;
-    hasStoredToken()
-      .then((present) => {
-        if (active) setHasToken(present);
-      })
-      .finally(() => {
-        if (active) setTokenChecked(true);
-      });
-    return () => {
-      active = false;
-    };
-  }, []);
-
-  const me = useMe(tokenChecked && hasToken);
+  const me = useMe(hasToken);
   const user = me.data ?? null;
-  // While we hold a token, /me decides auth; with no token we're signed out.
-  const isBootstrapping = !tokenChecked || (hasToken && me.isLoading);
+
+  const isBootstrapping =
+    tokenPresence.isLoading || (hasToken && me.isLoading && !me.isFetched);
 
   return (
-    <AuthContext.Provider
-      value={{ user, isAuthenticated: Boolean(user), isBootstrapping }}
-    >
+    <AuthContext.Provider value={{ user, isAuthenticated: Boolean(user), isBootstrapping }}>
       {children}
     </AuthContext.Provider>
   );

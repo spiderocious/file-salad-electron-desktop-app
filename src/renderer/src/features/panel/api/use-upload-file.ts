@@ -1,5 +1,6 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 
+import { getBridge } from '@shared/services/bridge.ts';
 import type { UploadResult } from '../../../../../shared/types/upload.ts';
 
 import { uploadsQueryKey } from './use-uploads.ts';
@@ -13,7 +14,7 @@ export function useUploadFile() {
   return useMutation<UploadResult, Error, File>({
     mutationFn: async (file) => {
       const bytes = await file.arrayBuffer();
-      return window.fileSalad.upload.perform({
+      return getBridge().upload.perform({
         filename: file.name,
         contentType: file.type || 'application/octet-stream',
         bytes,

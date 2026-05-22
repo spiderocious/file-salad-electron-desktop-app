@@ -1,5 +1,6 @@
 import { useQuery } from '@tanstack/react-query';
 
+import { getBridge } from '@shared/services/bridge.ts';
 import type { ActiveMode } from '../../../../../shared/types/upload.ts';
 
 export const activeModeQueryKey = () => ['active-mode'] as const;
@@ -9,7 +10,7 @@ export const activeModeQueryKey = () => ['active-mode'] as const;
 export function useActiveMode() {
   return useQuery<ActiveMode>({
     queryKey: activeModeQueryKey(),
-    queryFn: () => window.fileSalad.upload.activeMode(),
+    queryFn: () => getBridge().upload.activeMode(),
     staleTime: 1_000,
   });
 }

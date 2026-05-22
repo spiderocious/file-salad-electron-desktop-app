@@ -34,9 +34,9 @@ describe('provider-config', () => {
 
   it('interpolates the R2 endpoint template from accountId', () => {
     const r2 = findDescriptor(PROVIDER_CONFIG, 'r2');
-    expect(resolveTemplate(r2!.endpointTemplate, creds({ provider: 'r2', accountId: 'acc123' }))).toBe(
-      'https://acc123.r2.cloudflarestorage.com',
-    );
+    expect(
+      resolveTemplate(r2!.endpointTemplate, creds({ provider: 'r2', accountId: 'acc123' })),
+    ).toBe('https://acc123.r2.cloudflarestorage.com');
   });
 
   it('declares accountId as a required field only for R2', () => {

@@ -6,9 +6,21 @@ import { EP } from '@shared/constants/endpoints.ts';
 import type { AuthUser } from '@shared/types/api.ts';
 
 export const meQueryKey = () => ['me'] as const;
+export const tokenPresenceQueryKey = () => ['token-presence'] as const;
 
-// Bootstraps the session on launch: if a stored token exists, fetch the user.
-// `enabled` is gated on token presence so we don't fire /me when signed out.
+// Whether a stored token exists, as a query so it reacts to login/logout
+// (which invalidate it) instead of being read once at mount.
+export function useTokenPresence() {
+  return useQuery({
+    queryKey: tokenPresenceQueryKey(),
+    queryFn: async () => (await tokenService.get()) !== null,
+    staleTime: 0,
+  });
+}
+
+// Fetches the authenticated user. Gated on a stored token being present so we
+// don't fire /me while signed out. Refetches after login (meQueryKey is
+// invalidated) and after the token-presence query flips.
 export function useMe(hasToken: boolean) {
   return useQuery({
     queryKey: meQueryKey(),
@@ -16,8 +28,4 @@ export function useMe(hasToken: boolean) {
     enabled: hasToken,
     retry: false,
   });
-}
-
-export async function hasStoredToken(): Promise<boolean> {
-  return (await tokenService.get()) !== null;
 }

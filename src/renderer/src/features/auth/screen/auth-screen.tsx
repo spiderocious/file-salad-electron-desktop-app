@@ -1,20 +1,24 @@
 import { useQueryClient } from '@tanstack/react-query';
-import { Button, FieldLabel, SegmentControl, TextInput, toast } from 'file-salad-ui-lib';
+import { Button, FieldLabel, TextInput } from 'file-salad-ui-lib';
 import { Show } from 'meemaw';
 import { useState } from 'react';
 import { z } from 'zod';
 
-import { Logo } from '@shared/ui/logo/logo.tsx';
+import { Salad } from '@icons';
 import { ApiError } from '@shared/services/api-error.ts';
 
-import { byokStatusQueryKey } from '../../settings/api/use-byok-status.ts';
-import { ByokForm } from '../../settings/parts/byok-form.tsx';
 import { useLogin } from '../api/use-login.ts';
 import { useRegister } from '../api/use-register.ts';
 import { meQueryKey } from '../api/use-me.ts';
 
 type Mode = 'signin' | 'register';
-type View = 'auth' | 'byok';
+
+interface AuthScreenProps {
+  // Switch the drawer to BYOK setup ("use my own storage instead").
+  readonly onUseOwnStorage: () => void;
+  // Called after a successful sign-in / register (lets the host close/refresh).
+  readonly onAuthenticated?: () => void;
+}
 
 const credentialsSchema = z.object({
   email: z.string().email('Enter a valid email'),
@@ -26,12 +30,10 @@ const credentialsSchema = z.object({
     .regex(/\d/, 'Needs a number'),
 });
 
-// First screen for an unauthenticated user. They can sign in / create an
-// account, or skip auth entirely and connect their own storage (BYOK). Inline
-// errors throughout — never toasts for things the user must fix.
-export function AuthScreen() {
+// Login by default, with a header. A single inline link toggles to "create
+// account" (and back) — no tabs. Inline errors throughout.
+export function AuthScreen({ onUseOwnStorage, onAuthenticated }: AuthScreenProps) {
   const queryClient = useQueryClient();
-  const [view, setView] = useState<View>('auth');
   const [mode, setMode] = useState<Mode>('signin');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -41,15 +43,12 @@ export function AuthScreen() {
   const login = useLogin();
   const register = useRegister();
   const pending = login.isPending || register.isPending;
-
-  function onAuthSuccess(): void {
-    void queryClient.invalidateQueries({ queryKey: meQueryKey() });
-  }
+  const isSignin = mode === 'signin';
 
   function mapError(error: unknown): string {
     if (error instanceof ApiError) {
       if (error.is('invalid_credentials')) return 'Wrong email or password.';
-      if (error.is('email_exists')) return 'An account with that email already exists.';
+      if (error.is('email_exists')) return 'We can\'t create an account with that email.';
       if (error.is('validation_error')) return error.message || 'Check your details and try again.';
     }
     return 'Something went wrong. Please try again.';
@@ -64,109 +63,97 @@ export function AuthScreen() {
     setFieldError(null);
     setFormError(null);
 
+    const onSuccess = (): void => {
+      void queryClient.invalidateQueries({ queryKey: meQueryKey() });
+      onAuthenticated?.();
+    };
     const onError = (error: unknown): void => setFormError(mapError(error));
-    if (mode === 'signin') {
-      login.mutate(parsed.data, { onSuccess: onAuthSuccess, onError });
-    } else {
-      register.mutate(parsed.data, { onSuccess: onAuthSuccess, onError });
-    }
+    if (isSignin) login.mutate(parsed.data, { onSuccess, onError });
+    else register.mutate(parsed.data, { onSuccess, onError });
+  }
+
+  function toggleMode(): void {
+    setMode(isSignin ? 'register' : 'signin');
+    setFieldError(null);
+    setFormError(null);
   }
 
   return (
-    <div className="flex h-screen flex-col bg-[var(--fs-bg)] px-5 py-6">
-      <div className="mb-5 flex justify-center">
-        <Logo />
-      </div>
+    <div className="flex flex-col">
+      <header className="mb-5 flex flex-col items-center text-center">
+        <span className="mb-3 flex h-12 w-12 items-center justify-center rounded-2xl bg-[var(--fs-accent-subtle)]">
+          <Salad className="text-[var(--fs-accent)]" size={26} aria-hidden="true" />
+        </span>
+        <h1 className="text-lg font-semibold text-[var(--fs-text)]">
+          {isSignin ? 'Welcome back' : 'Create your account'}
+        </h1>
+        <p className="mt-1 text-sm text-[var(--fs-text-secondary)]">
+          {isSignin
+            ? 'Sign in to upload to FileSalad.'
+            : 'Sign up to start sharing files in two clicks.'}
+        </p>
+      </header>
 
-      <Show
-        when={view === 'auth'}
-        fallback={
-          <div className="flex flex-1 flex-col overflow-y-auto">
-            <p className="mb-3 text-sm text-[var(--fs-text-secondary)]">
-              Connect your own S3, R2, Tigris or GCS bucket. Your keys stay on this device.
-            </p>
-            <ByokForm
-              submitLabel="Connect & continue"
-              onSaved={() =>
-                queryClient.invalidateQueries({ queryKey: byokStatusQueryKey() })
-              }
-            />
-            <button
-              type="button"
-              onClick={() => setView('auth')}
-              className="mt-4 text-center text-xs font-medium text-[var(--fs-accent)] hover:underline"
-            >
-              Back to sign in
-            </button>
-          </div>
-        }
-      >
-        <div className="flex flex-1 flex-col">
-          <SegmentControl
-            aria-label="Authentication mode"
-            value={mode}
-            options={[
-              { value: 'signin', label: 'Sign in' },
-              { value: 'register', label: 'Create account' },
-            ]}
-            onChange={(value) => {
-              setMode(value as Mode);
-              setFormError(null);
-              setFieldError(null);
+      <div className="flex flex-col gap-3">
+        <div>
+          <FieldLabel required>Email</FieldLabel>
+          <TextInput
+            type="email"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            placeholder="you@example.com"
+          />
+        </div>
+        <div>
+          <FieldLabel required>Password</FieldLabel>
+          <TextInput
+            type="password"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            placeholder="••••••••"
+            onKeyDown={(e) => {
+              if (e.key === 'Enter') handleSubmit();
             }}
           />
+        </div>
 
-          <div className="mt-4 flex flex-col gap-3">
-            <div>
-              <FieldLabel required>Email</FieldLabel>
-              <TextInput
-                type="email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                placeholder="you@example.com"
-              />
-            </div>
-            <div>
-              <FieldLabel required>Password</FieldLabel>
-              <TextInput
-                type="password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                placeholder="••••••••"
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter') handleSubmit();
-                }}
-              />
-            </div>
+        <Show when={Boolean(fieldError)}>
+          <p role="alert" className="text-sm text-[var(--fs-error)]">
+            {fieldError}
+          </p>
+        </Show>
+        <Show when={Boolean(formError)}>
+          <p role="alert" className="text-sm text-[var(--fs-error)]">
+            {formError}
+          </p>
+        </Show>
 
-            <Show when={Boolean(fieldError)}>
-              <p role="alert" className="text-sm text-[var(--fs-error)]">
-                {fieldError}
-              </p>
-            </Show>
-            <Show when={Boolean(formError)}>
-              <p role="alert" className="text-sm text-[var(--fs-error)]">
-                {formError}
-              </p>
-            </Show>
+        <Button onClick={handleSubmit} loading={pending}>
+          {isSignin ? 'Sign in' : 'Create account'}
+        </Button>
 
-            <Button onClick={handleSubmit} loading={pending}>
-              {mode === 'signin' ? 'Sign in' : 'Create account'}
-            </Button>
-          </div>
-
+        {/* The toggle lives directly above/below the action, not as tabs. */}
+        <p className="text-center text-sm text-[var(--fs-text-secondary)]">
+          {isSignin ? "Don't have an account? " : 'Already have an account? '}
           <button
             type="button"
-            onClick={() => {
-              setView('byok');
-              toast.info('Set up your own storage');
-            }}
-            className="mt-auto pt-4 text-center text-xs font-medium text-[var(--fs-accent)] hover:underline"
+            onClick={toggleMode}
+            className="font-medium text-[var(--fs-accent)] hover:underline"
           >
-            Use my own storage instead
+            {isSignin ? 'Create account' : 'Sign in'}
           </button>
-        </div>
-      </Show>
+        </p>
+      </div>
+
+      <div className="mt-4 border-t border-[var(--fs-border)] pt-4">
+        <button
+          type="button"
+          onClick={onUseOwnStorage}
+          className="w-full text-center text-xs font-medium text-[var(--fs-accent)] hover:underline"
+        >
+          Use my own storage instead
+        </button>
+      </div>
     </div>
   );
 }

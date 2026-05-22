@@ -16,9 +16,16 @@ interface StoreShape {
   tokens: StoredTokens | null;
   byok: ByokCredentials | null;
   byokEnabled: boolean;
+  // History is opt-in (off by default) — see the privacy posture.
+  historyEnabled: boolean;
 }
 
-const EMPTY: StoreShape = { tokens: null, byok: null, byokEnabled: false };
+const EMPTY: StoreShape = {
+  tokens: null,
+  byok: null,
+  byokEnabled: false,
+  historyEnabled: false,
+};
 
 function storePath(): string {
   return path.join(app.getPath('userData'), 'filesalad.store.enc');
@@ -85,6 +92,14 @@ export const secureStore = {
   },
   clearByok(): void {
     cache = { ...state(), byok: null, byokEnabled: false };
+    persist(cache);
+  },
+
+  isHistoryEnabled(): boolean {
+    return state().historyEnabled;
+  },
+  setHistoryEnabled(enabled: boolean): void {
+    cache = { ...state(), historyEnabled: enabled };
     persist(cache);
   },
 };

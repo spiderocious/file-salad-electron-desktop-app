@@ -1,38 +1,39 @@
-import { Loader2 } from '@icons';
-import { Show } from 'meemaw';
-import type { ReactNode } from 'react';
+import { useEffect, useRef } from 'react';
+
+import { useDrawer } from '@shared/ui/drawer/drawer-host.tsx';
 
 import { useByokStatus } from '../../settings/api/use-byok-status.ts';
 import { useAuth } from '../providers/auth-provider.tsx';
-import { AuthScreen } from '../screen/auth-screen.tsx';
+import { AuthFlow } from '../screen/auth-flow.tsx';
 
-interface AuthGuardProps {
-  readonly children: ReactNode;
-}
-
-// Gates the panel. A user reaches it by signing in OR by configuring BYOK and
-// turning it on (they can skip signup and use their own bucket — PRD D-5). They
-// can still sign in later from settings.
-export function AuthGuard({ children }: AuthGuardProps) {
+// Effect-only gate. The canvas always renders; when the user isn't allowed in
+// (not signed in AND no enabled BYOK), this opens a NON-dismissable auth drawer
+// over the blurred canvas, and closes it once they're allowed (PRD D-5: BYOK
+// users can skip signup; anyone can sign in later from settings).
+export function AuthGuard() {
   const { isAuthenticated, isBootstrapping } = useAuth();
   const byok = useByokStatus();
+  const drawer = useDrawer();
+  const openedRef = useRef(false);
 
   const settling = isBootstrapping || byok.isLoading;
   const byokReady = Boolean(byok.data?.configured && byok.data?.enabled);
   const allowed = isAuthenticated || byokReady;
 
-  return (
-    <Show
-      when={!settling}
-      fallback={
-        <div className="flex h-screen items-center justify-center bg-[var(--fs-bg)]">
-          <Loader2 className="animate-spin text-[var(--fs-accent)]" size={28} />
-        </div>
-      }
-    >
-      <Show when={allowed} fallback={<AuthScreen />}>
-        {children}
-      </Show>
-    </Show>
-  );
+  useEffect(() => {
+    if (settling) return;
+    if (!allowed && !openedRef.current) {
+      openedRef.current = true;
+      drawer.open(<AuthFlow onComplete={() => drawer.close()} />, {
+        dismissable: false,
+        title: 'Sign in to FileSalad',
+      });
+    }
+    if (allowed && openedRef.current) {
+      openedRef.current = false;
+      drawer.close();
+    }
+  }, [settling, allowed, drawer]);
+
+  return null;
 }

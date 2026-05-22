@@ -1,6 +1,14 @@
 import type { ProviderConfig } from './types/provider-config.ts';
 import type { ByokCredentials, ByokStatus, StoredTokens } from './types/storage.ts';
-import type { ActiveMode, UploadListItem, UploadRequest, UploadResult } from './types/upload.ts';
+import type {
+  ActiveMode,
+  RedeemedFile,
+  RefreshedUrl,
+  ShareCode,
+  UploadListItem,
+  UploadRequest,
+  UploadResult,
+} from './types/upload.ts';
 
 // The preload bridge contract — the only API surface the renderer sees on
 // `window.fileSalad`. Shared between the preload implementation (which must
@@ -36,5 +44,20 @@ export interface FileSaladBridge {
     perform: (request: UploadRequest) => Promise<UploadResult>;
     list: () => Promise<UploadListItem[]>;
     activeMode: () => Promise<ActiveMode>;
+    refreshUrl: (uploadId: string) => Promise<RefreshedUrl>;
+    clearSession: () => Promise<void>;
   };
+
+  share: {
+    create: (uploadId: string) => Promise<ShareCode>;
+    redeem: (code: string) => Promise<RedeemedFile>;
+  };
+
+  history: {
+    getEnabled: () => Promise<boolean>;
+    setEnabled: (enabled: boolean) => Promise<void>;
+  };
+
+  // Open a URL in the system browser (privacy policy, share links, "Open").
+  openExternal: (url: string) => Promise<void>;
 }

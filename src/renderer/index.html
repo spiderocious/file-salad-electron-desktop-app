@@ -3,9 +3,16 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <!--
+      connect-src is open because this desktop app talks to the FileSalad
+      backend (any configured host) and uploads directly to arbitrary
+      user-supplied BYOK buckets (S3/R2/Tigris/GCS) whose endpoints aren't known
+      ahead of time. img-src is permissive so presigned previews from any bucket
+      can render. ws: covers Vite HMR in dev. Scripts/styles stay locked down.
+    -->
     <meta
       http-equiv="Content-Security-Policy"
-      content="default-src 'self'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data:;"
+      content="default-src 'self'; connect-src * 'self' http: https: ws: wss: data: blob:; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: blob: https: http:;"
     />
     <title>FileSalad</title>
     <link rel="preconnect" href="https://fonts.googleapis.com" />

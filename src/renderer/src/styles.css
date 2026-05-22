@@ -4,7 +4,7 @@
 
 /* Design tokens, palette, and typography come from file-salad-ui-lib's
    stylesheet (imported in main.tsx) — the --fs-* custom properties are the
-   single source of truth. This file sets panel-shell basics + the drop target,
+   single source of truth. This file sets the canvas, drop target, and drawers,
    referencing those tokens. To re-theme, override --fs-* vars here. */
 html,
 body,
@@ -14,7 +14,6 @@ body,
 
 body {
   margin: 0;
-  background: var(--fs-bg);
   color: var(--fs-text);
   font-family: var(--fs-font-sans);
   /* Menu-bar panels shouldn't show a text-selection cursor on chrome. */
@@ -22,42 +21,76 @@ body {
 }
 
 /* ---------------------------------------------------------------------------
-   Centered drop target: a white circle with a pulsating accent halo, matching
-   the web tone but scaled for the compact panel. Same approach as web — reshape
-   the lib DropZone into a circle and emit rings from a wrapper behind it.
+   Brand gradient canvas — the single surface every drawer floats over. Same
+   multi-color wavy sweep as the web upload screen, panel-scaled.
+--------------------------------------------------------------------------- */
+.fs-backdrop {
+  position: relative;
+  min-height: 100%;
+  background-color: #2bb673;
+  background-image:
+    radial-gradient(95% 100% at 100% 4%, #22d3ee 0%, rgba(34, 211, 238, 0) 60%),
+    radial-gradient(100% 100% at 100% 95%, #3b82f6 0%, rgba(59, 130, 246, 0) 62%),
+    radial-gradient(85% 90% at 58% 100%, #14b8a6 0%, rgba(20, 184, 166, 0) 58%),
+    radial-gradient(80% 90% at 0% 100%, #fbbf24 0%, rgba(251, 191, 36, 0) 55%),
+    radial-gradient(70% 75% at 46% 48%, #34d399 0%, rgba(52, 211, 153, 0) 60%),
+    radial-gradient(80% 85% at 36% 48%, #bef264 0%, rgba(190, 242, 100, 0) 55%),
+    radial-gradient(85% 95% at 6% 8%, #fde047 0%, rgba(253, 224, 71, 0) 60%);
+  background-size: 165% 165%;
+  animation: fs-backdrop-drift 26s ease-in-out infinite alternate;
+}
+
+@keyframes fs-backdrop-drift {
+  0% {
+    background-position: 0% 0%, 100% 0%, 55% 100%, 0% 100%, 45% 45%, 36% 48%, 6% 8%;
+  }
+  100% {
+    background-position: 12% 10%, 90% 90%, 52% 90%, 10% 92%, 50% 52%, 40% 50%, 10% 12%;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .fs-backdrop {
+    animation: none;
+  }
+}
+
+/* ---------------------------------------------------------------------------
+   Drop target: a rounded white card with a soft pulsating accent halo behind
+   it (cf. the design sketch). The lib DropZone is reshaped into the card.
 --------------------------------------------------------------------------- */
 .fs-target {
   position: relative;
   display: grid;
   place-items: center;
+  width: 100%;
 }
 
 .fs-target::before,
 .fs-target::after {
   content: '';
   position: absolute;
-  width: 9rem;
-  height: 9rem;
-  border-radius: 9999px;
-  background: var(--fs-accent-subtle);
+  inset: 0;
+  border-radius: 1.25rem;
+  background: rgba(255, 255, 255, 0.45);
   z-index: 0;
-  animation: fs-pulse-ring 2.8s cubic-bezier(0.2, 0.6, 0.2, 1) infinite;
+  animation: fs-pulse-card 3s cubic-bezier(0.2, 0.6, 0.2, 1) infinite;
 }
 
 .fs-target::after {
-  animation-delay: 1.4s;
+  animation-delay: 1.5s;
 }
 
-@keyframes fs-pulse-ring {
+@keyframes fs-pulse-card {
   0% {
     transform: scale(1);
-    opacity: 0.7;
+    opacity: 0.5;
   }
   70% {
     opacity: 0;
   }
   100% {
-    transform: scale(1.55);
+    transform: scale(1.12);
     opacity: 0;
   }
 }
@@ -65,17 +98,17 @@ body {
 .fs-target .fs-dropzone-circle {
   position: relative;
   z-index: 1;
-  width: 9rem;
-  height: 9rem;
+  width: 100%;
   min-height: 0;
   display: flex;
   align-items: center;
   justify-content: center;
-  border-radius: 9999px !important;
+  padding: 1.75rem 1rem !important;
+  border-radius: 1.25rem !important;
   border-style: solid !important;
-  border-color: var(--fs-border) !important;
-  background: var(--fs-bg) !important;
-  box-shadow: 0 10px 30px -12px rgba(26, 36, 32, 0.35);
+  border-color: rgba(255, 255, 255, 0.8) !important;
+  background: rgba(255, 255, 255, 0.96) !important;
+  box-shadow: 0 16px 40px -16px rgba(26, 36, 32, 0.4);
 }
 
 .fs-target.is-busy::before,
@@ -86,6 +119,149 @@ body {
 @media (prefers-reduced-motion: reduce) {
   .fs-target::before,
   .fs-target::after {
+    animation: none;
+  }
+}
+
+/* ---------------------------------------------------------------------------
+   Drawer: bottom-up overlay with a blurred/dimmed backdrop. Every screen other
+   than the upload canvas renders through this.
+--------------------------------------------------------------------------- */
+.fs-drawer-root {
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+}
+
+.fs-drawer-backdrop {
+  position: absolute;
+  inset: 0;
+  border: 0;
+  padding: 0;
+  cursor: pointer;
+  background: rgba(26, 36, 32, 0.4);
+  backdrop-filter: blur(3px);
+  animation: fs-fade-in 180ms ease-out;
+}
+
+.fs-drawer-sheet {
+  position: relative;
+  max-height: 92%;
+  display: flex;
+  flex-direction: column;
+  background: var(--fs-bg);
+  border-top-left-radius: 1rem;
+  border-top-right-radius: 1rem;
+  box-shadow: 0 -12px 40px -12px rgba(26, 36, 32, 0.45);
+  animation: fs-slide-up 240ms cubic-bezier(0.2, 0.7, 0.2, 1);
+}
+
+.fs-drawer-grip {
+  width: 2.25rem;
+  height: 0.25rem;
+  border-radius: 9999px;
+  background: var(--fs-border-strong);
+  margin: 0.6rem auto 0.2rem;
+  flex-shrink: 0;
+}
+
+.fs-drawer-body {
+  overflow-y: auto;
+  padding: 0.25rem 1.25rem 1.5rem;
+}
+
+@keyframes fs-slide-up {
+  from {
+    transform: translateY(100%);
+  }
+  to {
+    transform: translateY(0);
+  }
+}
+
+@keyframes fs-fade-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .fs-drawer-backdrop,
+  .fs-drawer-sheet {
+    animation: none;
+  }
+}
+
+/* The check that pops in when a history link is copied. */
+.fs-copy-pop {
+  animation: fs-copy-pop 240ms cubic-bezier(0.2, 0.7, 0.2, 1);
+}
+
+@keyframes fs-copy-pop {
+  0% {
+    transform: scale(0.4);
+    opacity: 0;
+  }
+  60% {
+    transform: scale(1.15);
+  }
+  100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .fs-copy-pop {
+    animation: none;
+  }
+}
+
+/* ---------------------------------------------------------------------------
+   OtpInput: each filled share-code cell pops in (scale/opacity), and the
+   focused-but-empty cell breathes with a subtle accent pulse to invite typing.
+--------------------------------------------------------------------------- */
+.fs-otp-pop {
+  animation: fs-otp-pop 150ms cubic-bezier(0.2, 0.7, 0.2, 1);
+}
+
+@keyframes fs-otp-pop {
+  0% {
+    transform: scale(0.7);
+    opacity: 0.3;
+  }
+  60% {
+    transform: scale(1.12);
+  }
+  100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+.fs-otp-empty:focus-visible {
+  animation: fs-otp-pulse 1.6s ease-in-out infinite;
+}
+
+@keyframes fs-otp-pulse {
+  0%,
+  100% {
+    box-shadow: 0 0 0 0 var(--fs-accent-subtle);
+  }
+  50% {
+    box-shadow: 0 0 0 3px var(--fs-accent-subtle);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .fs-otp-pop,
+  .fs-otp-empty:focus-visible {
     animation: none;
   }
 }

@@ -1,16 +1,44 @@
-import { CopyableLink, DropZone, toast } from 'file-salad-ui-lib';
+import { DropZone } from 'file-salad-ui-lib';
 import { Show } from 'meemaw';
+import { useState } from 'react';
 
 import { AlertCircle, Loader2, Salad, UploadCloud } from '@icons';
+import { ModeTabs } from '@shared/ui/mode-tabs/mode-tabs.tsx';
 
 import { usePasteUpload } from '../../utils/use-paste-upload.ts';
 import { useUploadController } from '../../utils/use-upload-controller.ts';
+import { CodeRedeem } from './code-redeem.tsx';
+import { ResultPanel } from './result-panel.tsx';
+import { ShareButton } from './share-button.tsx';
 
-// The centered white circle with the pulsing halo, matching the web tone but
-// panel-scaled. Drop/click come from the lib DropZone; ⌘V paste is wired
-// globally. Success shows a CopyableLink (+ "Link copied" toast); quota/size
-// errors render inline (with the BYO nudge), never as toasts.
+type Mode = 'upload' | 'code';
+
+const MODE_OPTIONS = [
+  { value: 'upload' as const, label: 'Upload' },
+  { value: 'code' as const, label: 'Have a code' },
+];
+
+// The panel's drop card is dual-mode: Upload (drop / paste / click) or Code
+// (redeem a share code). Tabs sit above the card; Upload is the default.
 export function DropArea() {
+  const [mode, setMode] = useState<Mode>('upload');
+
+  return (
+    <div className="flex w-full flex-col items-center gap-3">
+      <ModeTabs<Mode>
+        value={mode}
+        options={MODE_OPTIONS}
+        onChange={setMode}
+        aria-label="Upload or redeem a code"
+      />
+      <Show when={mode === 'upload'} fallback={<CodeRedeemCard />}>
+        <UploadCard />
+      </Show>
+    </div>
+  );
+}
+
+function UploadCard() {
   const { state, upload, reset } = useUploadController();
   const isUploading = state.status === 'uploading';
 
@@ -50,21 +78,20 @@ export function DropArea() {
       </div>
 
       <Show when={state.status === 'success'}>
-        <div className="w-full rounded-xl border border-[var(--fs-border)] bg-[var(--fs-bg)] p-3 shadow-sm">
-          <p className="mb-2 text-center text-xs font-medium text-[var(--fs-text-secondary)]">
-            Your link is ready
-          </p>
-          {state.status === 'success' && (
-            <CopyableLink url={state.result.publicUrl} onCopy={() => toast.success('Link copied')} />
-          )}
-          <button
-            type="button"
-            onClick={reset}
-            className="mt-2 w-full text-center text-xs font-medium text-[var(--fs-accent)] hover:underline"
-          >
-            Send another file
-          </button>
-        </div>
+        {state.status === 'success' ? (
+          <div className="flex w-full flex-col gap-2">
+            <ResultPanel
+              title="Your link is ready"
+              url={state.result.publicUrl}
+              resetLabel="Send another file"
+              onReset={reset}
+            />
+            {/* Share codes are hosted-only — BYOK uploads never reached our backend. */}
+            <Show when={state.result.mode === 'hosted'}>
+              <ShareButton uploadId={state.result.uploadId} />
+            </Show>
+          </div>
+        ) : null}
       </Show>
 
       <Show when={state.status === 'error'}>
@@ -76,6 +103,16 @@ export function DropArea() {
           {state.status === 'error' ? state.message : null}
         </p>
       </Show>
+    </div>
+  );
+}
+
+function CodeRedeemCard() {
+  return (
+    <div className="fs-target w-full">
+      <div className="fs-dropzone-circle">
+        <CodeRedeem />
+      </div>
     </div>
   );
 }

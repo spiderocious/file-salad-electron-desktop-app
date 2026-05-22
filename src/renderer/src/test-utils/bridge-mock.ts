@@ -50,14 +50,34 @@ export function installBridgeMock(initial?: Partial<BridgeMockState>): BridgeMoc
     upload: {
       perform: vi.fn(async () => ({
         uploadId: 'up_test',
+        key: 'f_test',
         publicUrl: 'https://files.example.com/f_test',
+        publicUrlExpiresAt: '2099-01-01T00:00:00Z',
         filename: 'f.png',
         size: 10,
         mode: state.uploadMode,
       })),
       list: vi.fn(async () => []),
       activeMode: vi.fn(async () => ({ mode: state.uploadMode })),
+      refreshUrl: vi.fn(async () => ({
+        url: 'https://files.example.com/fresh',
+        expiresAt: '2099-01-01T02:00:00Z',
+      })),
+      clearSession: vi.fn(async () => undefined),
     },
+    share: {
+      create: vi.fn(async () => ({ code: 'K7M2QPF', expiresInSeconds: 86400 })),
+      redeem: vi.fn(async () => ({
+        filename: 'shared.png',
+        url: 'https://files.example.com/shared',
+        expiresAt: '2099-01-01T02:00:00Z',
+      })),
+    },
+    history: {
+      getEnabled: vi.fn(async () => false),
+      setEnabled: vi.fn(async () => undefined),
+    },
+    openExternal: vi.fn(async () => undefined),
   };
 
   (window as unknown as { fileSalad: FileSaladBridge }).fileSalad = bridge;

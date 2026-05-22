@@ -1,14 +1,14 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { type ReactNode, useState } from 'react';
 
-import { PanelViewProvider } from '@shared/providers/panel-view-provider.tsx';
+import { DrawerHost } from '@shared/ui/drawer/drawer-host.tsx';
 
 import { AuthProvider } from '@features/auth/providers/auth-provider.tsx';
 import { UploadCountProvider } from '@features/panel/providers/upload-count-provider.tsx';
 
-// Global providers. Server state via React Query; auth state, panel-view, and
-// the session upload count via context. The app is a single fixed panel surface
-// (no URL routing) — views are state-routed (panel ↔ settings).
+// Global providers. Server state via React Query; auth state + session upload
+// count via context. The DrawerHost renders every non-canvas screen (auth,
+// settings, history) as a bottom-up drawer over the upload canvas.
 export function AppProviders({ children }: { children: ReactNode }) {
   const [queryClient] = useState(
     () =>
@@ -22,7 +22,7 @@ export function AppProviders({ children }: { children: ReactNode }) {
     <QueryClientProvider client={queryClient}>
       <AuthProvider>
         <UploadCountProvider>
-          <PanelViewProvider>{children}</PanelViewProvider>
+          <DrawerHost>{children}</DrawerHost>
         </UploadCountProvider>
       </AuthProvider>
     </QueryClientProvider>

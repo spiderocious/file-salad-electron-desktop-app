@@ -3,7 +3,8 @@ import { describe, expect, it } from 'vitest';
 
 import { createTestWrapper } from '../../../../../test-utils/create-test-wrapper.tsx';
 import { installBridgeMock } from '../../../../../test-utils/bridge-mock.ts';
-import { PanelViewProvider } from '@shared/providers/panel-view-provider.tsx';
+import { DrawerHost } from '@shared/ui/drawer/drawer-host.tsx';
+import { AuthProvider } from '../../../../auth/providers/auth-provider.tsx';
 import { UploadCountProvider } from '../../../providers/upload-count-provider.tsx';
 import { PanelHeader } from '../panel-header.tsx';
 
@@ -11,11 +12,13 @@ function renderHeader() {
   const Wrapper = createTestWrapper();
   return render(
     <Wrapper>
-      <UploadCountProvider>
-        <PanelViewProvider>
-          <PanelHeader />
-        </PanelViewProvider>
-      </UploadCountProvider>
+      <AuthProvider>
+        <UploadCountProvider>
+          <DrawerHost>
+            <PanelHeader />
+          </DrawerHost>
+        </UploadCountProvider>
+      </AuthProvider>
     </Wrapper>,
   );
 }

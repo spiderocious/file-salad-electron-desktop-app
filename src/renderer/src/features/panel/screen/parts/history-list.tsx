@@ -1,60 +1,58 @@
-import { Skeleton, UploadHistoryItem, toast } from 'file-salad-ui-lib';
+import { Skeleton } from 'file-salad-ui-lib';
 import { Repeat, Show } from 'meemaw';
 
-import { Clock } from '@icons';
-
+import { useHistoryEnabled } from '../../api/use-history-enabled.ts';
 import { useUploads } from '../../api/use-uploads.ts';
+import { HistoryRow } from './history-row.tsx';
+import { HistorySettings } from './history-settings.tsx';
 
-// Upload history from the active adapter (hosted backend or local BYOK). Renders
-// both identically — the renderer doesn't distinguish source. meemaw Show /
-// Repeat instead of `&&` / `.map()` per project conventions.
+// History drawer body. History is opt-in (off by default) — when off we show the
+// privacy toggle + an explainer instead of the list. When on, rows come from the
+// active adapter (hosted backend or local BYOK) via HistoryRow (expiry-aware
+// copy). meemaw Show / Repeat, not `&&` / `.map()`.
 export function HistoryList() {
+  const historyEnabled = useHistoryEnabled();
+  const enabled = Boolean(historyEnabled.data);
   const uploads = useUploads();
-  const entries = uploads.data ?? [];
+  const entries = enabled ? (uploads.data ?? []) : [];
 
   return (
-    <section className="flex flex-col gap-2">
-      <h2 className="flex items-center gap-1.5 text-xs font-medium uppercase tracking-wide text-[var(--fs-text-tertiary)]">
-        <Clock size={12} aria-hidden="true" />
-        Recent
-      </h2>
+    <div className="flex flex-col gap-3">
+      <HistorySettings />
 
       <Show
-        when={!uploads.isLoading}
+        when={enabled}
         fallback={
-          <div className="flex flex-col gap-2">
-            <Skeleton className="h-10 w-full" />
-            <Skeleton className="h-10 w-full" />
-          </div>
+          <p className="py-8 text-center text-sm text-[var(--fs-text-tertiary)]">
+            History is off. Turn it on above to keep a list of your links on this device.
+          </p>
         }
       >
         <Show
-          when={entries.length > 0}
+          when={!uploads.isLoading}
           fallback={
-            <p className="py-6 text-center text-sm text-[var(--fs-text-tertiary)]">
-              No uploads yet.
-            </p>
+            <div className="flex flex-col gap-2">
+              <Skeleton className="h-12 w-full" />
+              <Skeleton className="h-12 w-full" />
+            </div>
           }
         >
-          <ul className="flex flex-col gap-1">
-            <Repeat each={[...entries]}>
-              {(entry) => (
-                <li key={entry.id}>
-                  <UploadHistoryItem
-                    filename={entry.filename}
-                    url={entry.url}
-                    size={entry.size}
-                    timestamp={entry.timestamp}
-                    // Lib's UploadMode is 'hosted' | 'byo'; ours is 'hosted' | 'byok'.
-                    mode={entry.mode === 'byok' ? 'byo' : 'hosted'}
-                    onCopy={() => toast.success('Link copied')}
-                  />
-                </li>
-              )}
-            </Repeat>
-          </ul>
+          <Show
+            when={entries.length > 0}
+            fallback={
+              <p className="py-8 text-center text-sm text-[var(--fs-text-tertiary)]">
+                No uploads yet. Your links will show up here.
+              </p>
+            }
+          >
+            <ul className="flex flex-col gap-2">
+              <Repeat each={[...entries]}>
+                {(entry) => <HistoryRow key={entry.id} entry={entry} />}
+              </Repeat>
+            </ul>
+          </Show>
         </Show>
       </Show>
-    </section>
+    </div>
   );
 }

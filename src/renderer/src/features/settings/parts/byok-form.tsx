@@ -1,13 +1,11 @@
-import { Button, FieldLabel, SegmentControl, TextInput, toast } from 'file-salad-ui-lib';
+import { Button, FieldLabel, TextInput, toast } from 'file-salad-ui-lib';
 import { Repeat, Show } from 'meemaw';
 import { useMemo, useState } from 'react';
 
 import { Loader2 } from '@icons';
 import { useProviderConfig } from '@shared/api/use-provider-config.ts';
-import type {
-  ByokCredentials,
-  StorageProvider,
-} from '../../../../../shared/types/storage.ts';
+import { Select } from '@shared/ui/select/select.tsx';
+import type { ByokCredentials, StorageProvider } from '../../../../../shared/types/storage.ts';
 import type { ProviderDescriptor } from '../../../../../shared/types/provider-config.ts';
 
 import { useSaveByok } from '../api/use-save-byok.ts';
@@ -81,12 +79,12 @@ export function ByokForm({ onSaved, submitLabel = 'Save & use my bucket' }: Byok
       <div className="flex flex-col gap-3">
         <div>
           <FieldLabel>Storage provider</FieldLabel>
-          <SegmentControl
+          <Select<StorageProvider>
             aria-label="Storage provider"
-            value={activeProvider ?? undefined}
+            value={(activeProvider ?? 't3') as StorageProvider}
             options={providers.map((p) => ({ value: p.provider, label: p.label }))}
             onChange={(value) => {
-              setProvider(value as StorageProvider);
+              setProvider(value);
               setValues({});
               setEndpoint('');
               setPublicBase('');

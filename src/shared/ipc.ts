@@ -23,6 +23,21 @@ export const IPC = {
   UPLOAD_PERFORM: 'upload:perform',
   UPLOAD_LIST: 'upload:list',
   UPLOAD_ACTIVE_MODE: 'upload:active-mode',
+  // Refresh a stale presigned URL for an upload (hosted → download endpoint).
+  UPLOAD_REFRESH_URL: 'upload:refresh-url',
+  // Clear local/session upload history (on logout — no cross-account leak).
+  UPLOAD_CLEAR_SESSION: 'upload:clear-session',
+
+  // Share codes (hosted uploads only — BYOK never reaches our backend).
+  SHARE_CREATE: 'share:create',
+  SHARE_REDEEM: 'share:redeem',
+
+  // History opt-in preference (persisted; off by default).
+  HISTORY_GET_ENABLED: 'history:get-enabled',
+  HISTORY_SET_ENABLED: 'history:set-enabled',
+
+  // Open a URL in the system browser (privacy policy, share links, "Open").
+  OPEN_EXTERNAL: 'app:open-external',
 } as const;
 
 export type IpcChannel = (typeof IPC)[keyof typeof IPC];

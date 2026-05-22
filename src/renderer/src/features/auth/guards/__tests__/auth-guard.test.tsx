@@ -3,7 +3,7 @@ import { describe, expect, it } from 'vitest';
 
 import { createTestWrapper } from '../../../../test-utils/create-test-wrapper.tsx';
 import { installBridgeMock } from '../../../../test-utils/bridge-mock.ts';
-import { PanelViewProvider } from '@shared/providers/panel-view-provider.tsx';
+import { DrawerHost } from '@shared/ui/drawer/drawer-host.tsx';
 import { AuthProvider } from '../../providers/auth-provider.tsx';
 import { AuthGuard } from '../auth-guard.tsx';
 
@@ -12,31 +12,31 @@ function renderGuard() {
   return render(
     <Wrapper>
       <AuthProvider>
-        <PanelViewProvider>
-          <AuthGuard>
-            <div>PANEL CONTENT</div>
-          </AuthGuard>
-        </PanelViewProvider>
+        <DrawerHost>
+          <div>CANVAS</div>
+          <AuthGuard />
+        </DrawerHost>
       </AuthProvider>
     </Wrapper>,
   );
 }
 
 describe('AuthGuard', () => {
-  it('shows the auth screen when signed out and no BYOK', async () => {
+  it('opens the auth drawer over the canvas when signed out with no BYOK', async () => {
     installBridgeMock({ tokens: null, byok: { configured: false, enabled: false } });
     renderGuard();
-    // Auth screen renders the sign-in control; panel content stays hidden.
+    // Canvas always renders; the auth drawer is layered over it.
+    expect(screen.getByText('CANVAS')).toBeInTheDocument();
     expect(await screen.findByRole('button', { name: /^sign in$/i })).toBeInTheDocument();
-    expect(screen.queryByText('PANEL CONTENT')).not.toBeInTheDocument();
   });
 
-  it('allows the panel when BYOK is configured and enabled (no account)', async () => {
+  it('does not open the auth drawer when BYOK is configured and enabled', async () => {
     installBridgeMock({
       tokens: null,
       byok: { configured: true, enabled: true, provider: 't3', bucket: 'b' },
     });
     renderGuard();
-    await waitFor(() => expect(screen.getByText('PANEL CONTENT')).toBeInTheDocument());
+    await waitFor(() => expect(screen.getByText('CANVAS')).toBeInTheDocument());
+    expect(screen.queryByRole('button', { name: /^sign in$/i })).not.toBeInTheDocument();
   });
 });

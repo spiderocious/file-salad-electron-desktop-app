@@ -1,12 +1,6 @@
 import { secureStore } from './secure-store.ts';
 import type { StoredTokens } from '@shared/types/storage.ts';
 
-// Minimal authenticated client for our backend, used by the hosted adapter from
-// the main process. Attaches the Bearer access token from the secure store and,
-// on a 401, refreshes once (rotating refresh token) then retries. The renderer
-// also has its own client for /auth + /me; this one exists so hosted uploads
-// can run entirely in main alongside BYOK.
-
 const API_PREFIX = '/api/v1';
 
 function baseUrl(): string {

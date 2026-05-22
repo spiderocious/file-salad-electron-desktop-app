@@ -1,5 +1,7 @@
 import { useQuery } from '@tanstack/react-query';
 
+import { getBridge } from '@shared/services/bridge.ts';
+
 // The BYOK provider config (which providers exist, what fields each needs, how
 // to derive endpoints/public URLs). The UI renders entirely from this — it has
 // no hardcoded provider knowledge.
@@ -13,7 +15,7 @@ export const providerConfigQueryKey = () => ['provider-config'] as const;
 export function useProviderConfig() {
   return useQuery({
     queryKey: providerConfigQueryKey(),
-    queryFn: () => window.fileSalad.providerConfig.get(),
+    queryFn: () => getBridge().providerConfig.get(),
     staleTime: Infinity,
   });
 }

@@ -1,5 +1,6 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 
+import { getBridge } from '@shared/services/bridge.ts';
 import type { ByokCredentials } from '../../../../../shared/types/storage.ts';
 
 import { byokStatusQueryKey } from './use-byok-status.ts';
@@ -10,7 +11,7 @@ import { byokStatusQueryKey } from './use-byok-status.ts';
 export function useSaveByok() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: (creds: ByokCredentials) => window.fileSalad.byok.save(creds),
+    mutationFn: (creds: ByokCredentials) => getBridge().byok.save(creds),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: byokStatusQueryKey() }),
   });
 }
@@ -18,7 +19,7 @@ export function useSaveByok() {
 export function useSetByokEnabled() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: (enabled: boolean) => window.fileSalad.byok.setEnabled(enabled),
+    mutationFn: (enabled: boolean) => getBridge().byok.setEnabled(enabled),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: byokStatusQueryKey() }),
   });
 }
@@ -26,7 +27,7 @@ export function useSetByokEnabled() {
 export function useClearByok() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: () => window.fileSalad.byok.clear(),
+    mutationFn: () => getBridge().byok.clear(),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: byokStatusQueryKey() }),
   });
 }

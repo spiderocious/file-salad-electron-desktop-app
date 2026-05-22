@@ -34,7 +34,21 @@ const api: FileSaladBridge = {
     perform: (request: UploadRequest) => ipcRenderer.invoke(IPC.UPLOAD_PERFORM, request),
     list: () => ipcRenderer.invoke(IPC.UPLOAD_LIST),
     activeMode: () => ipcRenderer.invoke(IPC.UPLOAD_ACTIVE_MODE),
+    refreshUrl: (uploadId: string) => ipcRenderer.invoke(IPC.UPLOAD_REFRESH_URL, uploadId),
+    clearSession: () => ipcRenderer.invoke(IPC.UPLOAD_CLEAR_SESSION),
   },
+
+  share: {
+    create: (uploadId: string) => ipcRenderer.invoke(IPC.SHARE_CREATE, uploadId),
+    redeem: (code: string) => ipcRenderer.invoke(IPC.SHARE_REDEEM, code),
+  },
+
+  history: {
+    getEnabled: () => ipcRenderer.invoke(IPC.HISTORY_GET_ENABLED),
+    setEnabled: (enabled: boolean) => ipcRenderer.invoke(IPC.HISTORY_SET_ENABLED, enabled),
+  },
+
+  openExternal: (url: string) => ipcRenderer.invoke(IPC.OPEN_EXTERNAL, url),
 };
 
 contextBridge.exposeInMainWorld('fileSalad', api);

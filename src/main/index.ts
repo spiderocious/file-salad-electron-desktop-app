@@ -26,7 +26,7 @@ function createPanel(): BrowserWindow {
     skipTaskbar: true,
     alwaysOnTop: true,
     webPreferences: {
-      preload: path.join(__dirname, '../preload/index.mjs'),
+      preload: path.join(__dirname, '../preload/index.js'),
       contextIsolation: true,
       nodeIntegration: false,
       sandbox: false,
@@ -54,10 +54,7 @@ function positionPanelUnderTray(window: BrowserWindow, trayInstance: Tray): void
   const workArea = display.workArea;
 
   const x = Math.round(trayBounds.x + trayBounds.width / 2 - PANEL_WIDTH / 2);
-  const clampedX = Math.max(
-    workArea.x,
-    Math.min(x, workArea.x + workArea.width - PANEL_WIDTH),
-  );
+  const clampedX = Math.max(workArea.x, Math.min(x, workArea.x + workArea.width - PANEL_WIDTH));
   const y = Math.round(trayBounds.y + trayBounds.height + 4);
 
   window.setPosition(clampedX, y, false);
